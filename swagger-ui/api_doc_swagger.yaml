@@ -1,0 +1,294 @@
+openapi: 3.0.0
+info:
+  title: API Gestion Bénéficiaires - Employés
+  description: |
+    API pour la gestion des bénéficiaires d'assurance des employés
+    Architecture SOA avec services séparés (auth, dossier, notification)
+  version: 1.0.0
+  contact:
+    email: contact@localhost.com
+
+servers:
+  - url: http://localhost/soa-app/api-gateway
+    description: Serveur de développement
+
+tags:
+  - name: Authentication
+    description: Validation d'identité et gestion des employés
+  - name: Beneficiaires
+    description: Gestion des bénéficiaires d'assurance
+  - name: Notifications
+    description: Envoi de notifications et emails
+
+paths:
+  /valider-identite:
+    post:
+      tags: [Authentication]
+      summary: Valider l'identité d'un employé
+      operationId: validerIdentite
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nom, numero_employe, adresse, nas, email]
+              properties:
+                nom:
+                  type: string
+                  example: "Diary Kely"
+                numero_employe:
+                  type: string
+                  example: "EMP0123"
+                adresse:
+                  type: string
+                  example: "Tanambao, Fianarantsoa"
+                nas:
+                  type: string
+                  example: "123-456"
+                email:
+                  type: string
+                  format: email
+                
+      responses:
+        '200':
+          description: Identité confirmée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  message:
+                    type: string
+                  employe:
+                    $ref: '#/components/schemas/Employe'
+        '400':
+          description: Champ manquant
+        '401':
+          description: Identité non confirmée
+        '500':
+          description: Erreur serveur
+
+  /employes:
+    get:
+      tags: [Authentication]
+      summary: Lister tous les employés
+      operationId: getEmployes
+      responses:
+        '200':
+          description: Liste des employés
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Employe'
+    
+    post:
+      tags: [Authentication]
+      summary: Ajouter un nouvel employé
+      operationId: addEmploye
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeInput'
+      responses:
+        '200':
+          description: Employé ajouté
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  message:
+                    type: string
+                    example: "Employé ajouté"
+    delete:
+      tags: [Authentication]
+      summary: Supprimer un employé
+      operationId: supprEmploye
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string 
+      responses:
+        '200':
+          description: Employé supprimé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  message:
+                    type: string
+                    example: "Employé supprimé"      
+
+  /beneficiaires:
+    get:
+      tags: [Beneficiaires]
+      summary: Obtenir les informations d'un bénéficiaire
+      operationId: getBeneficiaire
+      parameters:
+        - name: employe_id
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Informations du bénéficiaire
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/Beneficiaire'
+                  - type: array
+                    items:
+                      $ref: '#/components/schemas/Beneficiaire'
+        '400':
+          description: ID employé manquant
+
+  /beneficiaires/update:
+    put:
+      tags: [Beneficiaires]
+      summary: Mettre à jour ou ajouter un bénéficiaire
+      operationId: updateBeneficiaire
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [employe_id, nom]
+              properties:
+                employe_id:
+                  type: string
+                  example: "EMP0123"
+                nom:
+                  type: string
+                  example: "Rakoto Rakotoson"
+      responses:
+        '200':
+          description: Bénéficiaire mis à jour
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Bénéficiaire mis à jour."
+
+  /envoyer-mail:
+    post:
+      tags: [Notifications]
+      summary: Envoyer une notification par email
+      operationId: envoyerMail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Notification'
+      responses:
+        '200':
+          description: Email envoyé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  id_notification:
+                    type: integer
+
+components:
+  schemas:
+    Employe:
+      type: object
+      properties:
+        id:
+          type: integer
+        nom:
+          type: string
+        numero_employe:
+          type: string
+        adresse:
+          type: string
+        nas:
+          type: string
+        email:
+          type: string
+          format: email
+      example:
+        id: 1
+        nom: "Diary"
+        numero_employe: "EMP0123"
+        adresse: "Tanambao, Fianarantsoa"
+        nas: "123-456"
+        email: "user@test.com"
+        
+    EmployeInput:
+      type: object
+      required: [nom, numero_employe, adresse, nas, email]
+      properties:
+        nom:
+          type: string
+        numero_employe:
+          type: string
+        adresse:
+          type: string
+        nas:
+          type: string
+        email:
+          type: string
+          format: email
+
+    Beneficiaire:
+      type: object
+      properties:
+        id:
+          type: integer
+        employe_id:
+          type: string
+        nom:
+          type: string
+      example:
+        id: 1
+        employe_id: "EMP0123"
+        nom: "Rakoto Rakotoson"
+
+    Notification:
+      type: object
+      required: [employe_id, destinataire, type, contenu]
+      properties:
+        employe_id:
+          type: string
+          example: "EMP0123"
+        destinataire:
+          type: string
+          format: email
+        type:
+          type: string
+          enum: [avis_assurance, notification]
+        contenu:
+          type: string
+          example: "Un changement de bénéficiaire a été enregistré pour EMPxxxx"
