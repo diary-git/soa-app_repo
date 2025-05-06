@@ -69,7 +69,7 @@ Documentation Swagger complète disponible :
 
 ```bash
 # 1. Cloner le dépôt
-git clone https://github.com/diary-git/soa-app.git
+git clone https://github.com/diary-git/soa-app_repo.git
 
 # 2. Installer les dépendances
 composer install
